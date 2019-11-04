@@ -1,5 +1,6 @@
 ﻿using AVT.VmbAPINET;
 using Camera_Application.Models;
+using Camera_Application.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,8 @@ namespace Camera_Application
         {
             InitializeComponent();
 
+            // Setup UI
+            setupUI();
 
             // Setup table
             setupTable();
@@ -40,6 +43,11 @@ namespace Camera_Application
             {
                 Console.WriteLine(e.ToString());
             }
+        }
+
+        private void setupUI()
+        {
+            this.button.IsEnabled = false;
         }
 
         private void setupTable()
@@ -132,12 +140,19 @@ namespace Camera_Application
 
         private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            this.button.IsEnabled = true;
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
-
+            if (this.listView.SelectedItems.Count > 0)
+            {
+                CameraModel selectedCamera = (CameraModel) listView.SelectedItems[0];
+                Console.WriteLine("selected item: " + selectedCamera.cameraID);
+                CameraWindow cameraWindow = new CameraWindow(selectedCamera);
+                cameraWindow.Show();
+                this.Close();
+            }
         }
     }
 }
