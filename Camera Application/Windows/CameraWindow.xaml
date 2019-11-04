@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Camera_Application.Windows"
         mc:Ignorable="d"
-        Title="CameraWindow" Height="300" Width="300">
+        Title="CameraWindow" Height="500" Width="500">
     <Grid>
-        <MediaElement x:Name="mediaElement" HorizontalAlignment="Left" Height="100" Margin="94,77,0,0" VerticalAlignment="Top" Width="100"/>
-
+        <Button x:Name="startCapture_btn" Content="Start Capture" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="90" Click="startCaptureBtn_Click"/>
+        <Button x:Name="stopCapture_btn" Content="Stop Capture" HorizontalAlignment="Left" Margin="105,10,0,0" VerticalAlignment="Top" Width="90" Click="stopCaptureBtn_Click"/>
     </Grid>
 </Window>

@@ -21,6 +21,8 @@ namespace Camera_Application.Windows
     /// </summary>
     public partial class CameraWindow : Window
     {
+        // Camera object
+        Camera sc = null;
 
         // Camera features
         FeatureCollection features = null;
@@ -33,7 +35,7 @@ namespace Camera_Application.Windows
             // Setup UI
             setupUI();
             
-            // Open specified camera
+            // Open specified camera and start capture
             openCamera(camera);
         }
 
@@ -51,7 +53,6 @@ namespace Camera_Application.Windows
                 sys.Startup();
 
                 CameraCollection cameras = sys.Cameras;
-                Camera sc = null;
                 foreach (Camera c in cameras)
                 {
                     if (c.Id.Equals(camera.cameraID))
@@ -71,7 +72,9 @@ namespace Camera_Application.Windows
                         MessageBox.Show("Error opening camera: " + ve.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     Console.WriteLine("Camera opened: " + camera.cameraID);
-                    readFeatures(sc);
+
+                    // Read camera features
+                    readFeatures();
                 }
             }
             finally
@@ -80,11 +83,12 @@ namespace Camera_Application.Windows
             }
         }
 
-        private void readFeatures(Camera camera)
+        private void readFeatures()
         {
             try
             {
-                foreach (Feature f in camera.Features)
+                features = sc.Features;
+                foreach (Feature f in sc.Features)
                 {
                     Console.WriteLine("Detected Feature: " + f.Name);
                 }
@@ -95,9 +99,85 @@ namespace Camera_Application.Windows
             }
         }
 
-        private void captureImage()
+        private void startCapture()
         {
+            try
+            {
+                long payloadSize;
+                AVT.VmbAPINET.Frame[] frameArray = new AVT.VmbAPINET.Frame[3];
 
+                sc.OnFrameReceived += new Camera.OnFrameReceivedHandler(onFrameReceived);
+                feature = features["PayloadSize"];
+                payloadSize = feature.IntValue;
+
+                for (int index = 0; index < frameArray.Length; ++index)
+                {
+                    frameArray[index] = new AVT.VmbAPINET.Frame(payloadSize);
+                    sc.AnnounceFrame(frameArray[index]);
+                }
+
+                sc.StartCapture();
+
+                for (int index = 0; index < frameArray.Length; ++index)
+                {
+                    sc.QueueFrame(frameArray[index]);
+                }
+
+                feature = features["AcquisitionMode"];
+                feature.EnumValue = "Continuous";
+
+                feature = features["AcquisitionStart"];
+                feature.RunCommand();
+            }
+            catch (VimbaException ve)
+            {
+                MessageBox.Show("An error occured: " + ve.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void stopCapture()
+        {
+            try
+            {
+                feature = features["AcquisitionStop"];
+                feature.RunCommand();
+
+                sc.EndCapture();
+                sc.FlushQueue();
+                sc.RevokeAllFrames();
+                sc.Close();
+            }
+            catch (VimbaException ve)
+            {
+                MessageBox.Show("An error occured: " + ve.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            
+        }
+
+        private void onFrameReceived(AVT.VmbAPINET.Frame frame)
+        {
+            //if (InvokeRequired) // if not from this thread invoke it in our context
+            //{
+                // In case of a separate thread (e.g. GUI ) use BeginInvoke to avoid a deadlock
+                Dispatcher.Invoke(new Camera.OnFrameReceivedHandler(onFrameReceived), frame);
+            //}
+            if (VmbFrameStatusType.VmbFrameStatusComplete == frame.ReceiveStatus)
+            {
+                Console.WriteLine("Frame status complete");
+            }
+            sc.QueueFrame(frame);
+        }
+
+        private void startCaptureBtn_Click(object sender, RoutedEventArgs e)
+        {
+            // Start capturing
+            startCapture();
+        }
+
+        private void stopCaptureBtn_Click(object sender, RoutedEventArgs e)
+        {
+            // Stop capturing
+            stopCapture();
         }
     }
 }
